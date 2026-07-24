@@ -1,0 +1,344 @@
+import React, { useState } from 'react';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import axios from 'axios';
+
+// Komponen untuk auto-zoom peta ke area banjir
+function FlyToGeoJSON({ geojsonData }) {
+  const map = useMap();
+  React.useEffect(() => {
+    if (geojsonData && geojsonData.features && geojsonData.features.length > 0) {
+      import('leaflet').then(L => {
+        const layer = L.geoJSON(geojsonData);
+        map.fitBounds(layer.getBounds(), { padding: [50, 50] });
+      });
+    }
+  }, [geojsonData, map]);
+  return null;
+}
+
+function App() {
+  const todayDate = new Date().toISOString().split('T')[0];
+  const [date, setDate] = useState(todayDate);
+  const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState(null);
+  const [error, setError] = useState(null);
+  const [showFlood, setShowFlood] = useState(true);
+  const [showMaros, setShowMaros] = useState(true);
+  const [marosBoundary, setMarosBoundary] = useState(null);
+
+  React.useEffect(() => {
+    // Memuat batas wilayah Maros
+    fetch('/maros.geojson')
+      .then(res => res.json())
+      .then(data => setMarosBoundary(data))
+      .catch(err => console.error("Gagal memuat batas wilayah Maros:", err));
+
+    // Auto-fetch saat aplikasi pertama kali dibuka (untuk tanggal hari ini)
+    const autoFetch = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.post("http://localhost:8000/api/predict", {
+          date: todayDate
+        }, {
+          headers: { "Content-Type": "application/json" }
+        });
+        setPrediction(response.data);
+      } catch (err) {
+        setError(err.response?.data?.detail || "Gagal auto-deteksi hari ini.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    autoFetch();
+  }, []);
+
+  const handleSearch = async () => {
+    if (!date) {
+      setError("Silakan pilih tanggal pencarian terlebih dahulu.");
+      return;
+    }
+    
+    setError(null);
+    setLoading(true);
+    setPrediction(null);
+    
+    try {
+      const response = await axios.post("http://localhost:8000/api/predict", {
+        date: date
+      }, {
+        headers: { "Content-Type": "application/json" }
+      });
+      setPrediction(response.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Terjadi kesalahan saat memproses prediksi.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // GeoJSON style berdasarkan Risk Level (dengan garis putus-putus seperti screenshot)
+  const getStyle = (feature) => {
+    let color = "#FF0000"; // default red
+    if (prediction && prediction.risk_level) {
+      const risk = prediction.risk_level.toLowerCase();
+      if (risk.includes("sangat tinggi")) color = "#8B0000";
+      else if (risk.includes("tinggi")) color = "#FF0000";
+      else if (risk.includes("sedang")) color = "#FFA500";
+      else if (risk.includes("rendah")) color = "#FFFF00";
+      else if (risk.includes("sangat rendah")) color = "#00FF00";
+    }
+    return {
+      fillColor: color,
+      weight: 3,
+      opacity: 1,
+      color: color,
+      dashArray: '5, 5', // Garis putus-putus
+      fillOpacity: 0.4
+    };
+  };
+
+  const onEachFeature = (feature, layer) => {
+    const daerahName = feature.properties?.daerah && feature.properties.daerah !== "Tidak Diketahui" 
+      ? feature.properties.daerah 
+      : "";
+      
+    if (daerahName) {
+      layer.bindPopup(`
+        <div style="text-align:center; font-family:'Outfit', sans-serif;">
+          <span style="font-size:12px; color:#666;">Kecamatan</span><br>
+          <strong style="font-size:16px;">${daerahName}</strong>
+        </div>
+      `);
+    }
+  };
+
+  // Grouping data for affected areas table
+  const getAffectedAreas = () => {
+    if (!prediction || !prediction.geojson || !prediction.geojson.features) return [];
+    
+    const areas = {};
+    prediction.geojson.features.forEach(f => {
+      const props = f.properties || {};
+      const daerah = props.daerah && props.daerah !== "Tidak Diketahui" ? props.daerah : "Lainnya";
+      const risk = props.risk_level || "Unknown";
+      const area = props.area_ha || 0;
+      
+      const key = `${daerah}-${risk}`;
+      if (!areas[key]) {
+        areas[key] = { daerah, risk, area: 0 };
+      }
+      areas[key].area += area;
+    });
+    
+    return Object.values(areas).sort((a, b) => b.area - a.area);
+  };
+
+  const getRiskColor = (risk) => {
+    const r = risk.toLowerCase();
+    if (r.includes("sangat tinggi")) return "#8B0000";
+    if (r.includes("tinggi")) return "#FF0000";
+    if (r.includes("sedang")) return "#FFA500";
+    if (r.includes("rendah")) return "#FFFF00";
+    if (r.includes("sangat rendah")) return "#00FF00";
+    return "#888888";
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-[#121212] overflow-hidden font-sans text-gray-200">
+      {/* Sidebar Panel - Dark Navy */}
+      <div className="w-[420px] bg-[#1a233a] flex flex-col z-[1000] relative border-r border-[#2a3655] shadow-2xl shrink-0">
+        
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <h1 className="text-2xl font-bold text-cyan-400">WebGIS Deteksi Banjir</h1>
+          <p className="text-gray-400 text-sm mt-1 mb-4">Kabupaten Maros</p>
+          <span className="bg-[#232d4b] text-cyan-400 text-xs font-semibold px-3 py-1 rounded-full border border-cyan-900">
+            Model: CNN + Mask R-CNN
+          </span>
+        </div>
+        
+        <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+          
+          {/* Informasi Data Panel */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Informasi Data</h2>
+            <div className="bg-[#232d4b] p-4 rounded-lg border border-[#2a3655] text-xs space-y-2">
+              <p><span className="font-semibold text-white">Sumber:</span> Google Earth Engine</p>
+              <p><span className="font-semibold text-white">Dataset:</span> Sentinel-1 GRD, Sentinel-2 MSI</p>
+              <p><span className="font-semibold text-white">Tanggal Citra Tersedia:</span> {prediction?.actual_sat_date || "Menunggu Deteksi..."}</p>
+            </div>
+          </div>
+
+          {/* Pencarian Historis Panel */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Pencarian Historis</h2>
+            <div className="space-y-3">
+              <div className="relative">
+                <input 
+                  type="date" 
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full bg-[#111827] border border-[#374151] text-gray-300 text-sm rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5"
+                />
+              </div>
+
+              <button 
+                onClick={handleSearch}
+                disabled={loading}
+                className={`w-full py-2.5 rounded-md text-gray-900 font-bold text-sm transition-colors shadow-lg ${loading ? 'bg-cyan-700 cursor-not-allowed text-gray-300' : 'bg-cyan-400 hover:bg-cyan-300'}`}
+              >
+                {loading ? 'Mengunduh & Memproses GEE...' : 'Cari Data Satelit'}
+              </button>
+
+              {error && (
+                <p className="text-xs text-red-400 mt-2 bg-red-900/20 p-2 rounded border border-red-800">{error}</p>
+              )}
+
+              {prediction && !loading && (
+                <p className="text-xs text-green-400 mt-2">
+                  Selesai! {prediction.geojson?.features?.length || 0} area terdeteksi.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Daerah Terdampak Panel */}
+          {prediction && prediction.geojson?.features?.length > 0 && (
+            <div>
+              <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Daerah Terdampak</h2>
+              <div className="bg-[#232d4b] rounded-lg border border-[#2a3655] overflow-y-auto max-h-[220px] custom-scrollbar relative">
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="text-xs text-gray-400 uppercase bg-[#1a233a] border-b border-[#2a3655] sticky top-0 z-10 shadow-sm">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">Kecamatan</th>
+                      <th className="px-3 py-2 font-semibold">Luas (Ha)</th>
+                      <th className="px-3 py-2 font-semibold text-center">Risiko</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getAffectedAreas().map((item, idx) => (
+                      <tr key={idx} className="border-b border-[#2a3655] last:border-0 hover:bg-[#2a3655] transition-colors">
+                        <td className="px-3 py-2 font-medium text-white">{item.daerah}</td>
+                        <td className="px-3 py-2">{item.area > 0 ? item.area.toFixed(2) : "< 0.01"}</td>
+                        <td className="px-3 py-2 flex justify-center">
+                          <div 
+                            className="w-3.5 h-3.5 rounded-sm border border-gray-700 mt-0.5" 
+                            style={{ backgroundColor: getRiskColor(item.risk) }}
+                            title={item.risk}
+                          ></div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Kontrol Lapisan */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Kontrol Lapisan (Layers)</h2>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showMaros}
+                  onChange={() => setShowMaros(!showMaros)}
+                  className="form-checkbox h-4 w-4 text-cyan-500 rounded bg-[#111827] border-gray-600 focus:ring-cyan-500" 
+                />
+                <span className="text-sm text-gray-300">Batas Wilayah Maros</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={showFlood}
+                  onChange={() => setShowFlood(!showFlood)}
+                  className="form-checkbox h-4 w-4 text-cyan-500 rounded bg-[#111827] border-gray-600 focus:ring-cyan-500" 
+                />
+                <span className="text-sm text-gray-300">Area Potensi Banjir</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Legenda Risiko */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Legenda Risiko</h2>
+            <div className="space-y-2">
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#8B0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Tinggi</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FF0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Tinggi</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFA500] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sedang</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFFF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Rendah</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#00FF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Rendah</span></div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-[#2a3655] text-center">
+          <p className="text-[10px] text-gray-500 leading-relaxed">
+            Sistem Informasi Geografis & Deep Learning<br/>Universitas - Skripsi 2026
+          </p>
+        </div>
+      </div>
+      
+      {/* Map Container */}
+      <div className="flex-1 relative bg-[#0a0a0a]">
+        <MapContainer center={[-5.0138, 119.5531]} zoom={11} className="h-full w-full" zoomControl={false}>
+          {/* CartoDB Dark Matter Tile Layer */}
+          <TileLayer
+            attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
+          {marosBoundary && showMaros && (
+            <GeoJSON 
+              data={marosBoundary} 
+              style={{
+                color: "#00FFFF", // Cyan color for Maros boundary
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0,
+                dashArray: "5, 5" // Garis putus-putus
+              }}
+            />
+          )}
+          {prediction && prediction.geojson && showFlood && (
+            <>
+              <GeoJSON 
+                key={prediction.history_id} 
+                data={prediction.geojson} 
+                style={getStyle}
+                onEachFeature={onEachFeature}
+              />
+              <FlyToGeoJSON geojsonData={prediction.geojson} />
+            </>
+          )}
+        </MapContainer>
+        
+        {/* Floating Detail Area Panel (Hanya muncul jika ada prediksi) */}
+        {prediction && (
+          <div className="absolute bottom-8 right-8 z-[1000] bg-[#1a233a] p-5 rounded-xl shadow-2xl border border-[#2a3655] w-72">
+            <h3 className="text-sm font-bold text-cyan-400 mb-4 border-b border-[#2a3655] pb-2">Detail Area</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Tingkat Risiko:</span>
+                <span className="font-bold text-white capitalize">{prediction.risk_level}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Confidence:</span>
+                <span className="font-bold text-white">{(prediction.confidence * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Sumber:</span>
+                <span className="font-bold text-white">CNN + Mask R-CNN</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
