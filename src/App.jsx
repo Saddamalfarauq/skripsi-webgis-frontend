@@ -37,7 +37,7 @@ function App() {
     const autoFetch = async () => {
       setLoading(true);
       try {
-        const response = await axios.post("http://localhost:8000/api/predict", {
+        const response = await axios.post("https://frenzy-provolone-duvet.ngrok-free.dev/api/predict", {
           date: todayDate
         }, {
           headers: { "Content-Type": "application/json" }
@@ -64,7 +64,7 @@ function App() {
     setPrediction(null);
     
     try {
-      const response = await axios.post("http://localhost:8000/api/predict", {
+      const response = await axios.post("https://frenzy-provolone-duvet.ngrok-free.dev/api/predict", {
         date: date
       }, {
         headers: { "Content-Type": "application/json" }
