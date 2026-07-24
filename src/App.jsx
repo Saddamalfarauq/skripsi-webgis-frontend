@@ -367,6 +367,19 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* Tombol untuk memunculkan kembali Detail Panel jika ditutup */}
+        {prediction && !showDetailPanel && (
+          <button 
+            onClick={() => setShowDetailPanel(true)}
+            className="absolute top-4 right-4 md:top-auto md:bottom-8 md:right-8 z-[1000] bg-[#1a233a]/90 hover:bg-[#2a3655] backdrop-blur-sm text-cyan-400 p-3 rounded-full shadow-2xl border border-[#2a3655] transition-all flex items-center justify-center animate-pulse"
+            title="Tampilkan Detail Area"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );
