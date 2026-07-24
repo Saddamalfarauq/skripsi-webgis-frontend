@@ -25,6 +25,10 @@ function App() {
   const [showFlood, setShowFlood] = useState(true);
   const [showMaros, setShowMaros] = useState(true);
   const [marosBoundary, setMarosBoundary] = useState(null);
+  
+  // States baru untuk fitur UI
+  const [showDetailPanel, setShowDetailPanel] = useState(true);
+  const [selectedKecamatan, setSelectedKecamatan] = useState(null);
 
   React.useEffect(() => {
     // Memuat batas wilayah Maros
@@ -43,6 +47,8 @@ function App() {
           headers: { "Content-Type": "application/json" }
         });
         setPrediction(response.data);
+        setShowDetailPanel(true);
+        setSelectedKecamatan(null);
       } catch (err) {
         setError(err.response?.data?.detail || "Gagal auto-deteksi hari ini.");
       } finally {
@@ -70,6 +76,8 @@ function App() {
         headers: { "Content-Type": "application/json" }
       });
       setPrediction(response.data);
+      setShowDetailPanel(true);
+      setSelectedKecamatan(null);
     } catch (err) {
       setError(err.response?.data?.detail || "Terjadi kesalahan saat memproses prediksi.");
     } finally {
@@ -218,8 +226,16 @@ function App() {
                   </thead>
                   <tbody>
                     {getAffectedAreas().map((item, idx) => (
-                      <tr key={idx} className="border-b border-[#2a3655] last:border-0 hover:bg-[#2a3655] transition-colors">
-                        <td className="px-3 py-2 font-medium text-white">{item.daerah}</td>
+                      <tr 
+                        key={idx} 
+                        onClick={() => setSelectedKecamatan(selectedKecamatan === item.daerah ? null : item.daerah)}
+                        className={`border-b border-[#2a3655] last:border-0 hover:bg-[#2a3655] transition-colors cursor-pointer ${selectedKecamatan === item.daerah ? 'bg-[#2a3655] border-l-2 border-l-cyan-400' : ''}`}
+                        title="Klik untuk memfilter peta"
+                      >
+                        <td className="px-3 py-2 font-medium text-white flex items-center justify-between">
+                          {item.daerah}
+                          {selectedKecamatan === item.daerah && <span className="text-[10px] bg-cyan-900/50 text-cyan-400 px-1.5 py-0.5 rounded">Aktif</span>}
+                        </td>
                         <td className="px-3 py-2">{item.area > 0 ? item.area.toFixed(2) : "< 0.01"}</td>
                         <td className="px-3 py-2 flex justify-center">
                           <div 
@@ -306,10 +322,14 @@ function App() {
           {prediction && prediction.geojson && showFlood && (
             <>
               <GeoJSON 
-                key={prediction.history_id} 
+                key={prediction.history_id + (selectedKecamatan || 'all')} 
                 data={prediction.geojson} 
                 style={getStyle}
                 onEachFeature={onEachFeature}
+                filter={(feature) => {
+                  if (!selectedKecamatan) return true;
+                  return feature.properties?.daerah === selectedKecamatan;
+                }}
               />
               <FlyToGeoJSON geojsonData={prediction.geojson} />
             </>
@@ -317,9 +337,20 @@ function App() {
         </MapContainer>
         
         {/* Floating Detail Area Panel (Hanya muncul jika ada prediksi) */}
-        {prediction && (
+        {prediction && showDetailPanel && (
           <div className="absolute top-4 right-4 md:top-auto md:bottom-8 md:right-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-4 md:p-5 rounded-xl shadow-2xl border border-[#2a3655] w-56 md:w-72">
-            <h3 className="text-sm font-bold text-cyan-400 mb-4 border-b border-[#2a3655] pb-2">Detail Area</h3>
+            <div className="flex justify-between items-center mb-4 border-b border-[#2a3655] pb-2">
+              <h3 className="text-sm font-bold text-cyan-400">Detail Area</h3>
+              <button 
+                onClick={() => setShowDetailPanel(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+                title="Tutup Panel"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">Tingkat Risiko:</span>
