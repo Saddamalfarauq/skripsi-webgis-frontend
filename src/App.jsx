@@ -145,9 +145,9 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#121212] overflow-hidden font-sans text-gray-200">
+    <div className="flex flex-col md:flex-row h-screen w-full bg-[#121212] overflow-hidden font-sans text-gray-200">
       {/* Sidebar Panel - Dark Navy */}
-      <div className="w-[420px] bg-[#1a233a] flex flex-col z-[1000] relative border-r border-[#2a3655] shadow-2xl shrink-0">
+      <div className="w-full md:w-[420px] h-[50vh] md:h-full bg-[#1a233a] flex flex-col z-[1000] relative border-t md:border-t-0 md:border-r border-[#2a3655] shadow-2xl shrink-0 order-2 md:order-1">
         
         {/* Header */}
         <div className="p-6 pb-4">
@@ -284,7 +284,7 @@ function App() {
       </div>
       
       {/* Map Container */}
-      <div className="flex-1 relative bg-[#0a0a0a]">
+      <div className="flex-1 relative bg-[#0a0a0a] order-1 md:order-2 h-[50vh] md:h-full">
         <MapContainer center={[-5.0138, 119.5531]} zoom={11} className="h-full w-full" zoomControl={false}>
           {/* CartoDB Dark Matter Tile Layer */}
           <TileLayer
@@ -318,7 +318,7 @@ function App() {
         
         {/* Floating Detail Area Panel (Hanya muncul jika ada prediksi) */}
         {prediction && (
-          <div className="absolute bottom-8 right-8 z-[1000] bg-[#1a233a] p-5 rounded-xl shadow-2xl border border-[#2a3655] w-72">
+          <div className="absolute top-4 right-4 md:top-auto md:bottom-8 md:right-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-4 md:p-5 rounded-xl shadow-2xl border border-[#2a3655] w-56 md:w-72">
             <h3 className="text-sm font-bold text-cyan-400 mb-4 border-b border-[#2a3655] pb-2">Detail Area</h3>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
