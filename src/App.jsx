@@ -25,6 +25,7 @@ function App() {
   const [showFlood, setShowFlood] = useState(true);
   const [showMaros, setShowMaros] = useState(true);
   const [marosBoundary, setMarosBoundary] = useState(null);
+  const [kecamatanBoundary, setKecamatanBoundary] = useState(null);
   
   // States baru untuk fitur UI
   const [showDetailPanel, setShowDetailPanel] = useState(true);
@@ -36,6 +37,12 @@ function App() {
       .then(res => res.json())
       .then(data => setMarosBoundary(data))
       .catch(err => console.error("Gagal memuat batas wilayah Maros:", err));
+
+    // Memuat batas kecamatan
+    fetch('/kecamatan.geojson')
+      .then(res => res.json())
+      .then(data => setKecamatanBoundary(data))
+      .catch(err => console.error("Gagal memuat batas kecamatan:", err));
 
     // Auto-fetch saat aplikasi pertama kali dibuka (untuk tanggal hari ini)
     const autoFetch = async () => {
@@ -85,16 +92,17 @@ function App() {
     }
   };
 
-  // GeoJSON style berdasarkan Risk Level (dengan garis putus-putus seperti screenshot)
+  // GeoJSON style berdasarkan Risk Level per-poligon
   const getStyle = (feature) => {
     let color = "#FF0000"; // default red
-    if (prediction && prediction.risk_level) {
-      const risk = prediction.risk_level.toLowerCase();
-      if (risk.includes("sangat tinggi")) color = "#8B0000";
-      else if (risk.includes("tinggi")) color = "#FF0000";
-      else if (risk.includes("sedang")) color = "#FFA500";
-      else if (risk.includes("rendah")) color = "#FFFF00";
-      else if (risk.includes("sangat rendah")) color = "#00FF00";
+    const risk = feature.properties?.risk_level;
+    if (risk) {
+      const r = risk.toLowerCase();
+      if (r.includes("sangat tinggi")) color = "#8B0000";
+      else if (r.includes("tinggi")) color = "#FF0000";
+      else if (r.includes("sedang")) color = "#FFA500";
+      else if (r.includes("rendah")) color = "#FFFF00";
+      else if (r.includes("sangat rendah")) color = "#00FF00";
     }
     return {
       fillColor: color,
@@ -312,10 +320,30 @@ function App() {
               data={marosBoundary} 
               style={{
                 color: "#00FFFF", // Cyan color for Maros boundary
-                weight: 2,
-                opacity: 0.8,
+                weight: 3,
+                opacity: 0.9,
+                fillOpacity: 0
+              }}
+            />
+          )}
+          {kecamatanBoundary && showMaros && (
+            <GeoJSON 
+              data={kecamatanBoundary} 
+              style={{
+                color: "#00FFFF", // Cyan color for Kecamatan boundaries
+                weight: 1,
+                opacity: 0.5,
                 fillOpacity: 0,
-                dashArray: "5, 5" // Garis putus-putus
+                dashArray: "4, 4"
+              }}
+              onEachFeature={(feature, layer) => {
+                if (feature.properties && feature.properties.nm_kecamatan) {
+                  layer.bindTooltip(feature.properties.nm_kecamatan, {
+                    permanent: false,
+                    direction: "center",
+                    className: "bg-[#1a233a] text-cyan-400 border border-[#2a3655] px-2 py-1 rounded text-xs"
+                  });
+                }
               }}
             />
           )}
