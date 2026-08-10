@@ -384,16 +384,24 @@ function App() {
           {prediction && prediction.geojson && showFlood && (
             <>
               <GeoJSON 
-                key={prediction.history_id + (selectedKecamatan || 'all')} 
+                key={(prediction.history_id || 'pred') + (selectedKecamatan || 'all')} 
                 data={prediction.geojson} 
                 style={getStyle}
                 onEachFeature={onEachFeature}
                 filter={(feature) => {
                   if (!selectedKecamatan) return true;
-                  return feature.properties?.daerah === selectedKecamatan;
+                  const daerah = feature.properties?.daerah;
+                  return daerah && daerah.toLowerCase() === selectedKecamatan.toLowerCase();
                 }}
               />
-              <FlyToGeoJSON geojsonData={prediction.geojson} />
+              <FlyToGeoJSON 
+                geojsonData={{
+                  ...prediction.geojson,
+                  features: selectedKecamatan 
+                    ? (prediction.geojson.features || []).filter(f => f.properties?.daerah && f.properties.daerah.toLowerCase() === selectedKecamatan.toLowerCase())
+                    : (prediction.geojson.features || [])
+                }} 
+              />
             </>
           )}
         </MapContainer>
