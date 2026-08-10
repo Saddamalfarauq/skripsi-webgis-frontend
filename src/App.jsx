@@ -30,6 +30,7 @@ function App() {
   // States baru untuk fitur UI
   const [showDetailPanel, setShowDetailPanel] = useState(true);
   const [selectedKecamatan, setSelectedKecamatan] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   React.useEffect(() => {
     // Memuat batas wilayah Maros
@@ -223,28 +224,48 @@ function App() {
           <div>
             <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Navigasi & Filter Kecamatan</h2>
             <div className="space-y-2.5">
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input 
                   type="text" 
                   list="kecamatan-list-react"
-                  value={selectedKecamatan || ""}
+                  value={searchQuery}
                   placeholder="🔍 Cari & Pilih Kecamatan (14 Kecamatan)..."
-                  className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-cyan-400 font-semibold text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 placeholder-gray-500"
+                  className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-cyan-400 font-semibold text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 pr-8 placeholder-gray-500"
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (!val) {
-                      setSelectedKecamatan(null);
-                      return;
-                    }
+                    setSearchQuery(val);
                     const list = ["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"];
-                    const match = list.find(k => k.toLowerCase() === val.toLowerCase().trim() || k.toLowerCase().includes(val.toLowerCase().trim()));
+                    const match = list.find(k => k.toLowerCase() === val.toLowerCase().trim());
                     if (match) {
                       setSelectedKecamatan(match);
-                    } else {
-                      setSelectedKecamatan(val);
+                    } else if (!val.trim()) {
+                      setSelectedKecamatan(null);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const list = ["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"];
+                      const match = list.find(k => k.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+                      if (match) {
+                        setSelectedKecamatan(match);
+                        setSearchQuery(match);
+                      }
                     }
                   }}
                 />
+                {searchQuery && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedKecamatan(null);
+                    }}
+                    className="absolute right-2.5 text-gray-400 hover:text-cyan-400 font-bold text-xs p-1 cursor-pointer"
+                    title="Hapus / Reset Pilihan"
+                  >
+                    ✕
+                  </button>
+                )}
                 <datalist id="kecamatan-list-react">
                   {["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"].map((k, i) => (
                     <option key={i} value={k}>Kecamatan {k}</option>
@@ -257,7 +278,12 @@ function App() {
                 <button 
                   type="button"
                   onClick={() => {
-                    if (!selectedKecamatan) {
+                    const list = ["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"];
+                    const match = list.find(k => k.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+                    if (match) {
+                      setSelectedKecamatan(match);
+                      setSearchQuery(match);
+                    } else if (!searchQuery.trim()) {
                       alert("Silakan cari atau pilih kecamatan terlebih dahulu.");
                     }
                   }}
@@ -267,7 +293,10 @@ function App() {
                 </button>
                 <button 
                   type="button"
-                  onClick={() => setSelectedKecamatan(null)}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedKecamatan(null);
+                  }}
                   className="flex-1 bg-[#1e293b] hover:bg-[#2d3748] text-gray-300 hover:text-white border border-[#374151] font-semibold py-2 px-3 rounded-md text-xs transition-all active:scale-95"
                 >
                   🔄 Reset Filter
