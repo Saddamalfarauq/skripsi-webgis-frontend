@@ -219,10 +219,10 @@ function App() {
             </div>
           </div>
 
-          {/* Navigasi Kecamatan Panel */}
+          {/* Navigasi & Filter Kecamatan Panel */}
           <div>
-            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Navigasi Kecamatan</h2>
-            <div className="space-y-2">
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Navigasi & Filter Kecamatan</h2>
+            <div className="space-y-2.5">
               <div className="relative">
                 <input 
                   type="text" 
@@ -250,6 +250,45 @@ function App() {
                   <option key={i} value={k} className="bg-[#1e293b] text-white">Kecamatan {k}</option>
                 ))}
               </select>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-1">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (!selectedKecamatan) {
+                      alert("Silakan pilih kecamatan terlebih dahulu.");
+                    }
+                  }}
+                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold py-2 px-3 rounded-md text-xs transition-all shadow-md active:scale-95"
+                >
+                  🎯 Filter Poligon
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedKecamatan(null)}
+                  className="flex-1 bg-[#1e293b] hover:bg-[#2d3748] text-gray-300 hover:text-white border border-[#374151] font-semibold py-2 px-3 rounded-md text-xs transition-all active:scale-95"
+                >
+                  🔄 Reset Filter
+                </button>
+              </div>
+
+              {/* Quick Pills */}
+              <div className="pt-1">
+                <p className="text-[11px] text-gray-400 mb-1.5 font-medium">Tombol Cepat Kecamatan:</p>
+                <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
+                  {["Mandai", "Turikale", "Maros Baru", "Lau", "Bontoa", "Bantimurung", "Simbang", "Tanralili", "Moncongloe", "Marusu", "Tompobulu", "Camba", "Cenrana", "Mallawa"].map((k, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedKecamatan(selectedKecamatan === k ? null : k)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${selectedKecamatan === k ? 'bg-cyan-400 text-gray-950 font-bold shadow-lg shadow-cyan-500/30' : 'bg-cyan-950/40 text-cyan-400 border border-cyan-800/50 hover:bg-cyan-900/50'}`}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
