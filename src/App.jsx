@@ -226,30 +226,31 @@ function App() {
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="Cari kecamatan (misal: Mandai)..."
-                  className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-gray-200 text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 placeholder-gray-500"
+                  list="kecamatan-list-react"
+                  value={selectedKecamatan || ""}
+                  placeholder="🔍 Cari & Pilih Kecamatan (14 Kecamatan)..."
+                  className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-cyan-400 font-semibold text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 placeholder-gray-500"
                   onChange={(e) => {
-                    const q = e.target.value.toLowerCase().trim();
-                    if (!q) {
+                    const val = e.target.value;
+                    if (!val) {
                       setSelectedKecamatan(null);
                       return;
                     }
                     const list = ["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"];
-                    const match = list.find(k => k.toLowerCase().includes(q));
-                    if (match) setSelectedKecamatan(match);
+                    const match = list.find(k => k.toLowerCase() === val.toLowerCase().trim() || k.toLowerCase().includes(val.toLowerCase().trim()));
+                    if (match) {
+                      setSelectedKecamatan(match);
+                    } else {
+                      setSelectedKecamatan(val);
+                    }
                   }}
                 />
+                <datalist id="kecamatan-list-react">
+                  {["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"].map((k, i) => (
+                    <option key={i} value={k}>Kecamatan {k}</option>
+                  ))}
+                </datalist>
               </div>
-              <select 
-                value={selectedKecamatan || ""}
-                onChange={(e) => setSelectedKecamatan(e.target.value || null)}
-                className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-cyan-400 font-semibold text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 cursor-pointer"
-              >
-                <option value="" className="text-gray-400">-- Pilih Kecamatan (14 Kecamatan) --</option>
-                {["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"].map((k, i) => (
-                  <option key={i} value={k} className="bg-[#1e293b] text-white">Kecamatan {k}</option>
-                ))}
-              </select>
 
               {/* Action Buttons */}
               <div className="flex gap-2 pt-1">
@@ -257,7 +258,7 @@ function App() {
                   type="button"
                   onClick={() => {
                     if (!selectedKecamatan) {
-                      alert("Silakan pilih kecamatan terlebih dahulu.");
+                      alert("Silakan cari atau pilih kecamatan terlebih dahulu.");
                     }
                   }}
                   className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-gray-950 font-bold py-2 px-3 rounded-md text-xs transition-all shadow-md active:scale-95"
@@ -271,23 +272,6 @@ function App() {
                 >
                   🔄 Reset Filter
                 </button>
-              </div>
-
-              {/* Quick Pills */}
-              <div className="pt-1">
-                <p className="text-[11px] text-gray-400 mb-1.5 font-medium">Tombol Cepat Kecamatan:</p>
-                <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
-                  {["Mandai", "Turikale", "Maros Baru", "Lau", "Bontoa", "Bantimurung", "Simbang", "Tanralili", "Moncongloe", "Marusu", "Tompobulu", "Camba", "Cenrana", "Mallawa"].map((k, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedKecamatan(selectedKecamatan === k ? null : k)}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${selectedKecamatan === k ? 'bg-cyan-400 text-gray-950 font-bold shadow-lg shadow-cyan-500/30' : 'bg-cyan-950/40 text-cyan-400 border border-cyan-800/50 hover:bg-cyan-900/50'}`}
-                    >
-                      {k}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
