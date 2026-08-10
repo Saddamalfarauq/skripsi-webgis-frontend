@@ -219,6 +219,40 @@ function App() {
             </div>
           </div>
 
+          {/* Navigasi Kecamatan Panel */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Navigasi Kecamatan</h2>
+            <div className="space-y-2">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Cari kecamatan (misal: Mandai)..."
+                  className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-gray-200 text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 placeholder-gray-500"
+                  onChange={(e) => {
+                    const q = e.target.value.toLowerCase().trim();
+                    if (!q) {
+                      setSelectedKecamatan(null);
+                      return;
+                    }
+                    const list = ["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"];
+                    const match = list.find(k => k.toLowerCase().includes(q));
+                    if (match) setSelectedKecamatan(match);
+                  }}
+                />
+              </div>
+              <select 
+                value={selectedKecamatan || ""}
+                onChange={(e) => setSelectedKecamatan(e.target.value || null)}
+                className="w-full bg-[#111827]/80 backdrop-blur-md border border-[#374151] text-cyan-400 font-semibold text-xs rounded-md focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 cursor-pointer"
+              >
+                <option value="" className="text-gray-400">-- Pilih Kecamatan (14 Kecamatan) --</option>
+                {["Bantimurung", "Bontoa", "Camba", "Cenrana", "Lau", "Mallawa", "Mandai", "Maros Baru", "Marusu", "Moncongloe", "Simbang", "Tanralili", "Tompobulu", "Turikale"].map((k, i) => (
+                  <option key={i} value={k} className="bg-[#1e293b] text-white">Kecamatan {k}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Daerah Terdampak Panel */}
           {prediction && prediction.geojson?.features?.length > 0 && (
             <div>
