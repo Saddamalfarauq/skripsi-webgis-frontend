@@ -388,7 +388,7 @@ function App() {
             attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           />
-          {marosBoundary && showMaros && (
+          {marosBoundary && showMaros && !selectedKecamatan && (
             <GeoJSON 
               data={marosBoundary} 
               style={{
@@ -401,20 +401,28 @@ function App() {
           )}
           {kecamatanBoundary && showMaros && (
             <GeoJSON 
-              data={kecamatanBoundary} 
+              key={selectedKecamatan || "all_kecamatan"}
+              data={selectedKecamatan ? {
+                ...kecamatanBoundary,
+                features: (kecamatanBoundary.features || []).filter(f => 
+                  f.properties && f.properties.nm_kecamatan && 
+                  f.properties.nm_kecamatan.toLowerCase() === selectedKecamatan.toLowerCase()
+                )
+              } : kecamatanBoundary} 
               style={{
                 color: "#00FFFF", // Cyan color for Kecamatan boundaries
-                weight: 1,
-                opacity: 0.5,
-                fillOpacity: 0,
-                dashArray: "4, 4"
+                weight: selectedKecamatan ? 4 : 1,
+                opacity: selectedKecamatan ? 1 : 0.5,
+                fillColor: "#00FFFF",
+                fillOpacity: selectedKecamatan ? 0.18 : 0,
+                dashArray: selectedKecamatan ? "" : "4, 4"
               }}
               onEachFeature={(feature, layer) => {
                 if (feature.properties && feature.properties.nm_kecamatan) {
                   layer.bindTooltip(feature.properties.nm_kecamatan, {
-                    permanent: false,
+                    permanent: !!selectedKecamatan,
                     direction: "center",
-                    className: "bg-[#1a233a] text-cyan-400 border border-[#2a3655] px-2 py-1 rounded text-xs"
+                    className: "bg-[#1a233a] text-cyan-400 border border-[#2a3655] px-2 py-1 rounded text-xs font-bold shadow-lg"
                   });
                 }
               }}
