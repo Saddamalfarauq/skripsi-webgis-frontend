@@ -102,8 +102,8 @@ function App() {
       if (r.includes("sangat tinggi")) color = "#8B0000";
       else if (r.includes("tinggi")) color = "#FF0000";
       else if (r.includes("sedang")) color = "#FFA500";
+      else if (r.includes("sangat rendah")) color = "#00FF00"; // Harus dicek sebelum "rendah"
       else if (r.includes("rendah")) color = "#FFFF00";
-      else if (r.includes("sangat rendah")) color = "#00FF00";
     }
     return {
       fillColor: color,
