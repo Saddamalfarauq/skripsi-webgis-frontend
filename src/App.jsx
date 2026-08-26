@@ -156,8 +156,8 @@ function App() {
     if (r.includes("sangat tinggi")) return "#8B0000";
     if (r.includes("tinggi")) return "#FF0000";
     if (r.includes("sedang")) return "#FFA500";
-    if (r.includes("rendah")) return "#FFFF00";
     if (r.includes("sangat rendah")) return "#00FF00";
+    if (r.includes("rendah")) return "#FFFF00";
     return "#888888";
   };
 
@@ -396,10 +396,10 @@ function App() {
       {/* Map Container */}
       <div className="flex-1 relative bg-[#0a0a0a] order-1 md:order-2 h-[50vh] md:h-full">
         <MapContainer center={[-5.0138, 119.5531]} zoom={11} className="h-full w-full" zoomControl={false}>
-          {/* CartoDB Dark Matter Tile Layer */}
+          {/* Esri Dark Gray Base Tile Layer (Free, No API Key Required) */}
           <TileLayer
-            attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
           />
           {marosBoundary && showMaros && !selectedKecamatan && (
             <GeoJSON 
