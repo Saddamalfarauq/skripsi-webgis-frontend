@@ -396,10 +396,10 @@ function App() {
       {/* Map Container */}
       <div className="flex-1 relative bg-[#0a0a0a] order-1 md:order-2 h-[50vh] md:h-full">
         <MapContainer center={[-5.0138, 119.5531]} zoom={11} className="h-full w-full" zoomControl={false}>
-          {/* Esri Dark Gray Base Tile Layer (Free, No API Key Required) */}
+          {/* Stadia Alidade Smooth Dark (Free, Identical to CARTO Dark Matter) */}
           <TileLayer
-            attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+            url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
           />
           {marosBoundary && showMaros && !selectedKecamatan && (
             <GeoJSON 
