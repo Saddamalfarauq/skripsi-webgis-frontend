@@ -396,10 +396,18 @@ function App() {
       {/* Map Container */}
       <div className="flex-1 relative bg-[#0a0a0a] order-1 md:order-2 h-[50vh] md:h-full">
         <MapContainer center={[-5.0138, 119.5531]} zoom={11} className="h-full w-full" zoomControl={false}>
-          {/* Stadia Alidade Smooth Dark (Free, Identical to CARTO Dark Matter) */}
+          {/* OpenStreetMap dengan CSS Invert (Gratis 100%, Aman dari Vercel/API Key) */}
+          <style>
+            {`
+              .dark-osm {
+                filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+              }
+            `}
+          </style>
           <TileLayer
-            attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
-            url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="dark-osm"
           />
           {marosBoundary && showMaros && !selectedKecamatan && (
             <GeoJSON 
