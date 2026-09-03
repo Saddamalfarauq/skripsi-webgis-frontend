@@ -371,19 +371,7 @@ function App() {
             </div>
           </div>
 
-          {/* Legenda Risiko */}
-          <div>
-            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Legenda Risiko</h2>
-            <div className="space-y-2">
-              <div className="flex items-center"><div className="w-4 h-4 bg-[#8B0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Tinggi</span></div>
-              <div className="flex items-center"><div className="w-4 h-4 bg-[#FF0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Tinggi</span></div>
-              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFA500] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sedang</span></div>
-              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFFF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Rendah</span></div>
-              <div className="flex items-center"><div className="w-4 h-4 bg-[#00FF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Rendah</span></div>
-            </div>
-          </div>
 
-        </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-[#2a3655] text-center">
@@ -466,6 +454,18 @@ function App() {
           )}
         </MapContainer>
         
+        {/* Floating Legend Panel (Indikator Risiko) */}
+        <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-3 md:p-4 rounded-xl shadow-2xl border border-[#2a3655] pointer-events-auto">
+          <h3 className="text-xs font-bold text-cyan-400 tracking-wider mb-2 md:mb-3 uppercase border-b border-[#2a3655] pb-2">Indikator Risiko</h3>
+          <div className="space-y-1.5 md:space-y-2">
+            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#8B0000] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sangat Tinggi</span></div>
+            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FF0000] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Tinggi</span></div>
+            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FFA500] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sedang</span></div>
+            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FFFF00] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Rendah</span></div>
+            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#00FF00] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sangat Rendah</span></div>
+          </div>
+        </div>
+
         {/* Floating Detail Area Panel (Hanya muncul jika ada prediksi) */}
         {prediction && showDetailPanel && (
           <div className="absolute top-4 right-4 md:top-auto md:bottom-8 md:right-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-4 md:p-5 rounded-xl shadow-2xl border border-[#2a3655] w-56 md:w-72">
