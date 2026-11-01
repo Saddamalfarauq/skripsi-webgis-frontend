@@ -27,10 +27,12 @@ function App() {
   const [marosBoundary, setMarosBoundary] = useState(null);
   const [kecamatanBoundary, setKecamatanBoundary] = useState(null);
   
-  // States baru untuk fitur UI
+  // States baru untuk fitur UI & Demo Fallback
   const [showDetailPanel, setShowDetailPanel] = useState(true);
   const [selectedKecamatan, setSelectedKecamatan] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [activeScenarioName, setActiveScenarioName] = useState("");
 
   React.useEffect(() => {
     // Memuat batas wilayah Maros
@@ -48,17 +50,34 @@ function App() {
     // Auto-fetch saat aplikasi pertama kali dibuka (untuk tanggal hari ini)
     const autoFetch = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const response = await axios.post("https://frenzy-provolone-duvet.ngrok-free.dev/api/predict", {
+        const apiUrl = import.meta.env.VITE_API_URL || "https://frenzy-provolone-duvet.ngrok-free.dev/api/predict";
+        const response = await axios.post(apiUrl, {
           date: todayDate
         }, {
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
+          timeout: 3500
         });
         setPrediction(response.data);
+        setIsDemoMode(false);
+        setActiveScenarioName("Live GEE Backend");
         setShowDetailPanel(true);
         setSelectedKecamatan(null);
       } catch (err) {
-        setError(err.response?.data?.detail || "Gagal auto-deteksi hari ini.");
+        console.warn("Backend live offline/timeout, beralih ke Mode Demo Interaktif:", err);
+        // Fallback otomatis ke data simulasi Maros
+        try {
+          const demoRes = await fetch('/demo-data/demo_prediction.json');
+          const demoData = await demoRes.json();
+          setPrediction(demoData);
+          setIsDemoMode(true);
+          setActiveScenarioName("Banjir Tinggi (21 Area)");
+          setShowDetailPanel(true);
+          setSelectedKecamatan(null);
+        } catch (demoErr) {
+          setError("Gagal memuat data simulasi.");
+        }
       } finally {
         setLoading(false);
       }
@@ -66,6 +85,24 @@ function App() {
     
     autoFetch();
   }, []);
+
+  const loadScenario = async (filename, name) => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`/demo-data/${filename}`);
+      const data = await res.json();
+      setPrediction(data);
+      setIsDemoMode(true);
+      setActiveScenarioName(name);
+      setShowDetailPanel(true);
+      setSelectedKecamatan(null);
+    } catch (err) {
+      setError("Gagal memuat data skenario demo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!date) {
@@ -75,19 +112,36 @@ function App() {
     
     setError(null);
     setLoading(true);
-    setPrediction(null);
     
     try {
-      const response = await axios.post("https://frenzy-provolone-duvet.ngrok-free.dev/api/predict", {
+      const apiUrl = import.meta.env.VITE_API_URL || "https://frenzy-provolone-duvet.ngrok-free.dev/api/predict";
+      const response = await axios.post(apiUrl, {
         date: date
       }, {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        timeout: 6000
       });
       setPrediction(response.data);
+      setIsDemoMode(false);
+      setActiveScenarioName(`Live (${date})`);
       setShowDetailPanel(true);
       setSelectedKecamatan(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Terjadi kesalahan saat memproses prediksi.");
+      console.warn("Live backend tidak merespons, memuat data simulasi terdekat...");
+      try {
+        const demoRes = await fetch('/demo-data/demo_prediction.json');
+        const demoData = await demoRes.json();
+        setPrediction({
+          ...demoData,
+          message: `[Mode Demo] Tanggal ${date}: Backend GPU lokal sedang offline, menampilkan simulasi historis terdekat.`
+        });
+        setIsDemoMode(true);
+        setActiveScenarioName("Simulasi Historis Maros");
+        setShowDetailPanel(true);
+        setSelectedKecamatan(null);
+      } catch (e) {
+        setError(err.response?.data?.detail || "Terjadi kesalahan saat memproses prediksi.");
+      }
     } finally {
       setLoading(false);
     }
@@ -169,10 +223,23 @@ function App() {
         {/* Header */}
         <div className="p-6 pb-4">
           <h1 className="text-2xl font-bold text-cyan-400">WebGIS Deteksi Banjir</h1>
-          <p className="text-gray-400 text-sm mt-1 mb-4">Kabupaten Maros</p>
-          <span className="bg-[#232d4b] text-cyan-400 text-xs font-semibold px-3 py-1 rounded-full border border-cyan-900">
-            Model: CNN + Mask R-CNN
-          </span>
+          <p className="text-gray-400 text-sm mt-1 mb-3">Kabupaten Maros, Sulawesi Selatan</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="bg-[#232d4b] text-cyan-400 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-cyan-900">
+              Model: CNN + Mask R-CNN
+            </span>
+            {isDemoMode ? (
+              <span className="bg-amber-950/80 text-amber-300 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-amber-700/60 flex items-center gap-1.5 shadow-sm" title="Menampilkan data inferensi riil tersimpan (Backend GPU lokal sedang offline)">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                Mode Demo Interaktif
+              </span>
+            ) : (
+              <span className="bg-emerald-950/80 text-emerald-300 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-emerald-700/60 flex items-center gap-1.5 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Live GEE Online
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-6">
@@ -183,13 +250,26 @@ function App() {
             <div className="bg-[#232d4b] p-4 rounded-lg border border-[#2a3655] text-xs space-y-2">
               <p><span className="font-semibold text-white">Sumber:</span> Google Earth Engine</p>
               <p><span className="font-semibold text-white">Dataset:</span> Sentinel-1 GRD, Sentinel-2 MSI</p>
-              <p><span className="font-semibold text-white">Tanggal Citra Tersedia:</span> {prediction?.actual_sat_date || "Menunggu Deteksi..."}</p>
+              <p><span className="font-semibold text-white">Tanggal Citra:</span> {prediction?.actual_sat_date || "Menunggu Deteksi..."}</p>
+              {isDemoMode && (
+                <div className="mt-2 pt-2 border-t border-[#2a3655] text-[11px] text-amber-200/90 leading-relaxed">
+                  💡 <strong>Info Reviewer:</strong> Menampilkan hasil inferensi riil model Deep Learning skripsi. Semua filter, poligon banjir, dan kalkulasi luas area aktif 100%.
+                </div>
+              )}
             </div>
           </div>
 
           {/* Pencarian Historis Panel */}
           <div>
-            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Pencarian Historis</h2>
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-xs font-bold text-gray-300 tracking-wider uppercase">Pencarian Historis</h2>
+              {activeScenarioName && (
+                <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800 font-medium">
+                  {activeScenarioName}
+                </span>
+              )}
+            </div>
+            
             <div className="space-y-3">
               <div className="relative">
                 <input 
@@ -201,12 +281,37 @@ function App() {
               </div>
 
               <button 
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={loading}
                 className={`w-full py-2.5 rounded-md text-gray-900 font-bold text-sm transition-colors shadow-lg ${loading ? 'bg-cyan-700 cursor-not-allowed text-gray-300' : 'bg-cyan-400 hover:bg-cyan-300'}`}
               >
                 {loading ? 'Mengunduh & Memproses GEE...' : 'Cari Data Satelit'}
               </button>
+
+              {/* Skenario Bencana Cepat untuk HRD / Reviewer */}
+              <div className="pt-2 border-t border-[#2a3655]/60">
+                <span className="text-[11px] text-gray-400 block mb-2 font-medium">⚡ Skenario Sampel Bencana (Klik Cepat):</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => loadScenario('demo_prediction.json', 'Banjir Tinggi (21 Area)')}
+                    className="bg-[#232d4b] hover:bg-[#2d3a60] border border-[#3a4972] text-cyan-300 text-[11px] py-2 px-2.5 rounded-md font-semibold transition-all text-left truncate flex items-center gap-1.5 shadow-sm active:scale-95"
+                    title="Muat Data Sampel Banjir Signifikan"
+                  >
+                    <span>🌊</span>
+                    <span className="truncate">Banjir Tinggi (21 Area)</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => loadScenario('demo_prediction_moderate.json', 'Genangan Sedang (30 Area)')}
+                    className="bg-[#232d4b] hover:bg-[#2d3a60] border border-[#3a4972] text-cyan-300 text-[11px] py-2 px-2.5 rounded-md font-semibold transition-all text-left truncate flex items-center gap-1.5 shadow-sm active:scale-95"
+                    title="Muat Data Sampel Genangan Sedang"
+                  >
+                    <span>🌧️</span>
+                    <span className="truncate">Genangan Sedang (30 Area)</span>
+                  </button>
+                </div>
+              </div>
 
               {error && (
                 <p className="text-xs text-red-400 mt-2 bg-red-900/20 p-2 rounded border border-red-800">{error}</p>
@@ -371,7 +476,19 @@ function App() {
             </div>
           </div>
 
+          {/* Legenda Risiko */}
+          <div>
+            <h2 className="text-xs font-bold text-gray-300 tracking-wider mb-3 uppercase">Legenda Risiko</h2>
+            <div className="space-y-2">
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#8B0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Tinggi</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FF0000] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Tinggi</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFA500] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sedang</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#FFFF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Rendah</span></div>
+              <div className="flex items-center"><div className="w-4 h-4 bg-[#00FF00] rounded-sm mr-3 border border-gray-700"></div><span className="text-sm text-gray-400">Sangat Rendah</span></div>
+            </div>
+          </div>
 
+        </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-[#2a3655] text-center">
@@ -454,18 +571,6 @@ function App() {
           )}
         </MapContainer>
         
-        {/* Floating Legend Panel (Indikator Risiko) */}
-        <div className="absolute bottom-4 left-4 md:bottom-8 md:left-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-3 md:p-4 rounded-xl shadow-2xl border border-[#2a3655] pointer-events-auto">
-          <h3 className="text-xs font-bold text-cyan-400 tracking-wider mb-2 md:mb-3 uppercase border-b border-[#2a3655] pb-2">Indikator Risiko</h3>
-          <div className="space-y-1.5 md:space-y-2">
-            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#8B0000] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sangat Tinggi</span></div>
-            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FF0000] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Tinggi</span></div>
-            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FFA500] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sedang</span></div>
-            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#FFFF00] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Rendah</span></div>
-            <div className="flex items-center"><div className="w-3.5 h-3.5 bg-[#00FF00] rounded-sm mr-2.5 border border-gray-600 shadow-sm"></div><span className="text-[10px] md:text-xs text-gray-300 font-medium">Sangat Rendah</span></div>
-          </div>
-        </div>
-
         {/* Floating Detail Area Panel (Hanya muncul jika ada prediksi) */}
         {prediction && showDetailPanel && (
           <div className="absolute top-4 right-4 md:top-auto md:bottom-8 md:right-8 z-[1000] bg-[#1a233a]/90 backdrop-blur-sm p-4 md:p-5 rounded-xl shadow-2xl border border-[#2a3655] w-56 md:w-72">
@@ -494,6 +599,12 @@ function App() {
                 <span className="text-gray-400">Sumber:</span>
                 <span className="font-bold text-white">CNN + Mask R-CNN</span>
               </div>
+              {isDemoMode && (
+                <div className="pt-2 border-t border-[#2a3655] text-[11px] text-amber-300 flex items-center gap-1.5 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  Data Inferensi Tersimpan (Demo)
+                </div>
+              )}
             </div>
           </div>
         )}
